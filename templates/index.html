@@ -3,80 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Recognition Attendance</title>
-    <style>
-        body {
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            margin-top: 20px;
-        }
-        video {
-            width: 70%;
-            border: 5px solid #333;
-            margin-bottom: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 10px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <title>Face Recognition System</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 </head>
 <body>
-
-    <h1>Face Recognition Attendance System</h1>
-    
     <div class="container">
-        <video id="videoFeed" autoplay></video>
-        <br>
-        <button onclick="startRecognition()">Start Recognition</button>
-        <button onclick="stopRecognition()">Stop Recognition</button>
+        <h1 class="mt-5">Face Recognition System</h1>
+        <a href="{{ url_for('login') }}" class="btn btn-primary mt-3">Login</a>
     </div>
-
-    <script>
-        // Function to load the video feed from the server
-        function loadVideoFeed() {
-            const video = document.getElementById('videoFeed');
-            video.src = "/video_feed";
-        }
-
-        // Function to start face recognition (navigates to /start route)
-        function startRecognition() {
-            fetch('/start')
-                .then(response => {
-                    loadVideoFeed(); // After starting, load the video feed
-                })
-                .catch(err => console.error("Error starting recognition:", err));
-        }
-
-        // Function to stop face recognition (navigates to /stop route)
-        function stopRecognition() {
-            fetch('/stop')
-                .then(response => {
-                    alert("Recognition stopped and CSV file saved.");
-                    const video = document.getElementById('videoFeed');
-                    video.pause();  // Stop video feed
-                    video.src = "";  // Clear the video feed
-                })
-                .catch(err => console.error("Error stopping recognition:", err));
-        }
-
-        // Load the video feed initially when the page loads
-        loadVideoFeed();
-    </script>
-
 </body>
 </html>

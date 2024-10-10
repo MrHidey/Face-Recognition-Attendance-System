@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Dashboard</h1>
+        <div>
+            <h2>Live Video Feed:</h2>
+            <img src="{{ url_for('video_feed') }}" style="width: 100%; height: auto;" />
+        </div>
+        <a href="{{ url_for('start_recognition') }}" class="btn btn-success mt-3">Start Recognition</a>
+        <a href="{{ url_for('stop_recognition') }}" class="btn btn-danger mt-3">Stop Recognition</a>
+    </div>
+</body>
+</html>
