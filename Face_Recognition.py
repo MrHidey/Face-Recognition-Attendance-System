@@ -71,7 +71,7 @@ def write_to_csv(file_path, name, time_str):
         lnwriter.writerow([name, time_str])
 
 # Process each video frame asynchronously for face recognition
-def process_frame_async(frame, file_path):
+def process_frames(frame, file_path):
     global students, present_students
 
     small_frame = cv2.resize(frame, (0, 0), fx=0.30, fy=0.30)
@@ -91,7 +91,7 @@ def process_frame_async(frame, file_path):
             if name in students and name not in present_students:
                 present_students.append(name)
                 now = datetime.now()
-                time_str = now.strftime("%H-%M-%S")
+                time_str = now.strftime("%H.%M.%S")
                 file_queue.put((file_path, name, time_str))
 
 # Stream video frames continuously while recognizing faces asynchronously
@@ -105,7 +105,7 @@ def generate_frames():
 
         if recognizing:
             file_path = get_current_date()
-            threading.Thread(target=process_frame_async, args=(frame, file_path)).start()
+            threading.Thread(target=process_frames, args=(frame, file_path)).start()
 
         _, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
