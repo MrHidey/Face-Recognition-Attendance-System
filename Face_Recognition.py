@@ -5,17 +5,21 @@ import numpy as np
 import csv
 import os
 from datetime import datetime
+import threading
+import queue
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 credentials_file = 'credentials.csv'
 
+# Save username and password to the CSV file
 def save_credentials(username, password):
     with open(credentials_file, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([username, password])
 
+# Check if the provided credentials match those in the CSV file
 def check_credentials(username, password):
     if os.path.exists(credentials_file):
         with open(credentials_file, mode='r') as file:
@@ -25,14 +29,16 @@ def check_credentials(username, password):
                     return True
     return False
 
+# Variables for face recognition
 known_face_encodings = []
 known_face_names = []
 students = []
 present_students = []
-lnwriter = None
 video_capture = None
 recognizing = False
+file_queue = queue.Queue()
 
+# Load known face images and their encodings
 def load_encode():
     global known_face_encodings, known_face_names, students
 
@@ -51,15 +57,22 @@ def load_encode():
     except Exception as e:
         print(f"Error loading images: {e}")
 
+# Get the current date and return the corresponding file path
 def get_current_date():
-    global lnwriter
     now = datetime.now()
     current_date = now.strftime("%Y-%m-%d")
-    f = open(f"{current_date}.csv", "w+", newline="")
-    lnwriter = csv.writer(f)
+    file_path = f"{current_date}.csv"
+    return file_path
 
-def process_frame(frame):
-    global students, lnwriter, present_students
+# Write attendance data (name, time) to the CSV file
+def write_to_csv(file_path, name, time_str):
+    with open(file_path, 'a', newline='') as f:
+        lnwriter = csv.writer(f)
+        lnwriter.writerow([name, time_str])
+
+# Process each video frame asynchronously for face recognition
+def process_frame_async(frame, file_path):
+    global students, present_students
 
     small_frame = cv2.resize(frame, (0, 0), fx=0.30, fy=0.30)
     rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
@@ -79,23 +92,34 @@ def process_frame(frame):
                 present_students.append(name)
                 now = datetime.now()
                 time_str = now.strftime("%H-%M-%S")
-                lnwriter.writerow([name, time_str])
-                lnwriter.flush()
+                file_queue.put((file_path, name, time_str))
 
+# Stream video frames continuously while recognizing faces asynchronously
 def generate_frames():
-    global video_capture
+    global video_capture, recognizing
+
     while recognizing:
         success, frame = video_capture.read()
         if not success:
             break
-        process_frame(frame)  # Process the frame in the background for recognition
 
-        # Continue streaming the video
+        if recognizing:
+            file_path = get_current_date()
+            threading.Thread(target=process_frame_async, args=(frame, file_path)).start()
+
         _, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+# Background thread for safely writing attendance data to the CSV
+def file_writer():
+    while True:
+        file_path, name, time_str = file_queue.get()
+        if file_path is None:
+            break
+        write_to_csv(file_path, name, time_str)
 
 @app.route('/video_feed')
 def video_feed():
@@ -124,7 +148,6 @@ def login():
 def dashboard():
     if 'user' in session:
         load_encode()
-        get_current_date()
         return render_template('dashboard.html')
     else:
         return redirect(url_for('login'))
@@ -140,18 +163,17 @@ def start_recognition():
         recognizing = False
         return "Could not open video device", 500
 
+    threading.Thread(target=file_writer, daemon=True).start()
+
     return redirect(url_for('dashboard'))
 
 @app.route('/stop_recognition')
 def stop_recognition():
-    global recognizing, video_capture, lnwriter, present_students
+    global recognizing, video_capture, present_students
     recognizing = False
     if video_capture is not None:
         video_capture.release()
         video_capture = None
-
-    if lnwriter is not None:
-        lnwriter = None
 
     return render_template('attendance.html', present_students=present_students)
 
