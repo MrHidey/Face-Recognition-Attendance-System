@@ -43,8 +43,8 @@ def load_encode():
     global known_face_encodings, known_face_names, students
 
     try:
-        images = ["Danush.jpg", "Keerthi.jpg", "Sam.jpg", "Yash.jpg", "ns.jpg"]
-        known_face_names = ["Danush", "Keerthi", "Sam", "Yash", "ns"]
+        images = ["Danush.jpg", "Keerthi.jpg", "Sam.jpg", "Yash.jpg"]
+        known_face_names = ["Danush", "Keerthi", "Sam", "Yash"]
         known_face_encodings = []
 
         for img_name in images:
@@ -85,8 +85,8 @@ def write_to_csv(file_path, name, time_str):
 # Process each video frame asynchronously for face recognition
 def process_frame(frame, file_path):
     global students, present_students
-    
-    # Resize the frame to make the face recognition faster
+
+    # Resize the frame for faster processing
     small_frame = cv2.resize(frame, (0, 0), fx=0.30, fy=0.30)
     rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
@@ -95,28 +95,53 @@ def process_frame(frame, file_path):
         embeddings = DeepFace.represent(img_path=rgb_small_frame, model_name="VGG-Face", enforce_detection=False)
         if embeddings:
             print("Embeddings generated successfully.")
-            
-            # Compare the generated embedding with known embeddings
-            for embedding in embeddings:
+
+            # Detect faces in the small frame using OpenCV's face detection
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            faces = face_cascade.detectMultiScale(rgb_small_frame, scaleFactor=1.1, minNeighbors=5)
+
+            for (x, y, w, h), embedding in zip(faces, embeddings):
+                name = "Unknown"
+                color = (0, 0, 255)  # Red for unknown
+
+                # Scale back the face coordinates to the original frame size
+                x_orig = int(x / 0.30)
+                y_orig = int(y / 0.30)
+                w_orig = int(w / 0.30)
+                h_orig = int(h / 0.30)
+
+                # Draw the red frame around the face
+                cv2.rectangle(frame, (x_orig, y_orig), (x_orig + w_orig, y_orig + h_orig), color, 2)
+                cv2.putText(frame, name, (x_orig, y_orig - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+                # Check if this embedding matches any known faces
                 for i, known_embedding in enumerate(known_face_encodings):
                     distance = np.linalg.norm(np.array(embedding['embedding']) - np.array(known_embedding))
-                    
-                    if distance < 1:
+
+                    if distance < 1.1:
                         name = known_face_names[i]
+                        color = (0, 255, 0)  # Change to green if recognized
                         print(f"Match found: {name}")
                         print(f"Distance calculated: {distance}")
-                        
+
                         if name in students and name not in present_students:
                             present_students.append(name)
                             now = datetime.now()
                             time_str = now.strftime("%H.%M.%S")
-                            print(f"Adding to queue: {name}, {time_str}")  # Debugging log
+                            print(f"Adding to queue: {name}, {time_str}")
                             file_queue.put((file_path, name, time_str))
                             print(f"Enqueued: {name}, {time_str}")
+
+                        # Update the rectangle color and text to green for recognized faces
+                        cv2.rectangle(frame, (x_orig, y_orig), (x_orig + w_orig, y_orig + h_orig), color, 2)
+                        cv2.putText(frame, name, (x_orig, y_orig - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
         else:
             print("No embeddings generated.")
     except Exception as e:
         print(f"Error in face recognition: {e}")
+
+
 
 # Stream video frames continuously while recognizing faces asynchronously
 def generate_frames():
