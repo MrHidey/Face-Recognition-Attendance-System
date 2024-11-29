@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta charset for proper text encoding -->
+    <meta charset="UTF-8">
+    
+    <!-- Meta tag for responsive design, adjusts layout for mobile screens -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Title of the page shown in browser tab -->
+    <title>Register</title>
+    
+    <!-- Bootstrap CSS for styling and layout -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    
+    <style>
+        /* Body styles with background image and overlay */
+        body {
+            background-image: url('/static/Images/BG1.jpg'); /* Set background image */
+            background-size: cover; /* Make background cover entire viewport */
+            background-position: center; /* Center the background */
+            background-repeat: no-repeat; /* Prevent background repetition */
+            height: 100vh; /* Set height to full viewport height */
+            display: flex; /* Flexbox to center the container */
+            align-items: center; /* Vertically center */
+            justify-content: center; /* Horizontally center */
+            margin: 0; /* Remove default body margin */
+            color: #fff; /* Set text color to white */
+            font-family: 'Poppins', sans-serif; /* Set font */
+        }
+
+        /* Dark overlay on background image */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)); /* Gradient overlay */
+            z-index: -1; /* Ensure overlay is behind content */
+        }
+
+        /* Container styling for the form */
+        .container {
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white background */
+            padding: 2.5rem; /* Padding around form */
+            border-radius: 15px; /* Rounded corners */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); /* Shadow effect */
+            width: 100%; /* Full width */
+            max-width: 400px; /* Limit maximum width */
+            text-align: center; /* Center content inside container */
+            backdrop-filter: blur(10px); /* Apply blur effect to the backdrop */
+        }
+
+        /* Styling for the header */
+        .container h3 {
+            font-size: 2rem; /* Set header font size */
+            margin-bottom: 1rem; /* Space below header */
+            font-weight: 600; /* Bold text */
+            color: #4CAF50; /* Green text color */
+            text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3); /* Light shadow for effect */
+        }
+
+        /* Input field styling */
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.15); /* Semi-transparent background */
+            color: #fff; /* White text color */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Light border */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Shadow around inputs */
+            font-size: 1rem; /* Font size for inputs */
+        }
+
+        /* Input field focus effect */
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.25); /* Lighter background on focus */
+            border: 1px solid #4CAF50; /* Green border on focus */
+            box-shadow: 0px 0px 8px #4CAF50; /* Green shadow on focus */
+            color: #fff; /* White text color when focused */
+        }
+
+        /* Button styling */
+        .btn-success {
+            background: linear-gradient(90deg, #4CAF50, #1E90FF); /* Gradient button color */
+            border: none; /* No border */
+            padding: 0.8rem 1.5rem; /* Button padding */
+            font-size: 1rem; /* Font size */
+            border-radius: 8px; /* Rounded corners */
+            transition: transform 0.3s, box-shadow 0.3s; /* Smooth transition for hover effects */
+        }
+
+        /* Button hover effect */
+        .btn-success:hover {
+            transform: translateY(-2px); /* Button lift effect */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4); /* Shadow on hover */
+        }
+
+        /* Link styling */
+        .container a {
+            color: #4CAF50; /* Green color for links */
+            text-decoration: none; /* Remove underline from links */
+            font-size: 0.9rem; /* Smaller font size for links */
+            transition: color 0.3s; /* Smooth color transition on hover */
+        }
+
+        /* Link hover effect */
+        .container a:hover {
+            color: #1E90FF; /* Change link color to blue on hover */
+        }
+
+        /* Media query for responsive design */
+        @media (max-width: 768px) {
+            .container {
+                width: 90%; /* Make container width 90% on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Register</h3>
+        
+        <!-- Flash messages for displaying errors or success messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-danger">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Register form -->
+        <form method="POST">
+            <!-- Username input field -->
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+
+            <!-- Password input field -->
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+
+            <!-- Confirm password input field -->
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+            </div>
+
+            <!-- Submit button -->
+            <button type="submit" class="btn btn-success btn-block">Register</button>
+        </form>
+
+        <!-- Link to login page for users with existing accounts -->
+        <div class="mt-3">
+            <a href="{{ url_for('login') }}" class="text-light">Already have an account? Login here</a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+</html>

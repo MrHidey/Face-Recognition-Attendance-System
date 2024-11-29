@@ -1,20 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Define character encoding for the document -->
     <meta charset="UTF-8">
+    
+    <!-- Make the page responsive by setting the viewport for different screen sizes -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    
+    <!-- Title of the web page -->
+    <title>Modern Dashboard</title>
+    
+    <!-- Link to the Bootstrap CSS for styling -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <style>
+        /* Body styling with background image */
+        body {
+            background-image: url('{{ url_for("static", filename="images/BG4.jpg") }}'); /* Background image from static folder */
+            background-size: cover; /* Cover the entire page */
+            background-position: center; /* Center the background */
+            background-repeat: no-repeat; /* Prevent repeating the background */
+            font-family: 'Roboto', sans-serif; /* Set font to Roboto */
+            height: 100vh; /* Set body height to 100% of the viewport height */
+            margin: 0; /* Remove default margins */
+            display: flex; /* Use flexbox for centering content */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            position: relative; /* Relative positioning for the add button */
+        }
+
+        /* Dashboard container styling */
+        .dashboard {
+            background: rgba(255, 255, 255, 0.8); /* White background with transparency */
+            border-radius: 15px; /* Rounded corners */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Drop shadow effect */
+            padding: 30px; /* Add padding inside the container */
+            max-width: 600px; /* Set maximum width of the dashboard */
+            width: 100%; /* Ensure it fits within the screen */
+            text-align: center; /* Center text inside the container */
+        }
+
+        /* Header styling for the title */
+        h1 {
+            font-size: 2.5rem; /* Larger font size for the title */
+            color: #333; /* Dark gray color for text */
+            margin-bottom: 20px; /* Space below the title */
+        }
+
+        /* Header styling for the sub-title */
+        h2 {
+            font-size: 1.2rem; /* Medium font size for the sub-title */
+            color: #666; /* Lighter gray color for text */
+            margin-bottom: 20px; /* Space below the sub-title */
+        }
+
+        /* Video feed styling */
+        #video-feed {
+            border-radius: 10px; /* Rounded corners for the video feed */
+            margin: 20px 0; /* Space above and below the video feed */
+            max-width: 100%; /* Make sure the video feed fits the container width */
+            height: auto; /* Maintain aspect ratio */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Shadow effect for the video feed */
+        }
+
+        /* Button styling */
+        .btn {
+            font-size: 1rem; /* Font size for buttons */
+            border-radius: 10px; /* Rounded button corners */
+            padding: 10px 20px; /* Add padding inside the buttons */
+            margin: 10px; /* Space between the buttons */
+            text-transform: uppercase; /* Make button text uppercase */
+            transition: transform 0.2s, background-color 0.2s; /* Smooth transitions for hover effects */
+        }
+
+        /* Styling for the success button (Start Recognition) */
+        .btn-success {
+            background-color: #28a745; /* Green background color */
+            border: none; /* Remove border */
+            color: #fff; /* White text color */
+        }
+
+        /* Styling for the danger button (Stop Recognition) */
+        .btn-danger {
+            background-color: #dc3545; /* Red background color */
+            border: none; /* Remove border */
+            color: #fff; /* White text color */
+        }
+
+        /* Styling for the add student button */
+        .btn-primary {
+            background-color: #007bff; /* Blue background color */
+            border: none; /* Remove border */
+            color: #fff; /* White text color */
+            position: absolute; /* Position it absolutely */
+            top: 20px; /* 20px from the top */
+            right: 20px; /* 20px from the right */
+        }
+
+        /* Button hover effect */
+        .btn:hover {
+            transform: translateY(-3px); /* Slight lift when hovered */
+            filter: brightness(90%); /* Darken button color on hover */
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Dashboard</h1>
+    <!-- Button to add a new student -->
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">Add Student</a>
+
+    <!-- Dashboard container -->
+    <div class="dashboard">
+        <!-- Main title of the page -->
+        <h1>Dashboard</h1>
+        
+        <!-- Subtitle for live video feed -->
+        <h2>Live Video Feed</h2>
+        
+        <!-- Image element to display the video feed -->
+        <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Live Video Feed">
+        
+        <!-- Container for buttons -->
         <div>
-            <h2>Live Video Feed:</h2>
-            <img src="{{ url_for('video_feed') }}" style="width: 0.30; height: 0.30;" />
+            <!-- Button to start recognition -->
+            <a href="{{ url_for('start_recognition') }}" class="btn btn-success">Start Recognition</a>
+            
+            <!-- Button to stop recognition -->
+            <a href="{{ url_for('stop_recognition') }}" class="btn btn-danger">Stop Recognition</a>
         </div>
-        <a href="{{ url_for('start_recognition') }}" class="btn btn-success mt-3">Start Recognition</a>
-        <a href="{{ url_for('stop_recognition') }}" class="btn btn-danger mt-3">Stop Recognition</a>
     </div>
+
+    <!-- Script includes for Bootstrap functionality -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
 </html>

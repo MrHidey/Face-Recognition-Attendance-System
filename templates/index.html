@@ -4,12 +4,187 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Recognition System</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        /* Style for the video background */
+        #background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            filter: brightness(50%);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', Arial, sans-serif;
+            color: #fff;
+        }
+
+        /* Hero section */
+        .hero {
+            padding: 120px 30px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #4CAF50, #1E90FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+        }
+
+        .hero .btn {
+            padding: 14px 40px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: white;
+            background: linear-gradient(135deg, #4CAF50, #1E90FF);
+            border: none;
+            border-radius: 30px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .hero .btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Features section */
+        .features {
+            background: #121212;
+            padding: 60px 20px;
+            margin-top: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #222, #333);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .feature-card h2 {
+            font-size: 1.7rem;
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            color: #ccc;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #1A1A1A;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: #1E90FF;
+        }
+
+        /* Fade-in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Responsive design adjustments */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .features {
+                padding: 30px 0;
+            }
+        }
+    </style>
 </head>
 <body>
+
+    <!-- Video Background -->
+    <video id="background-video" autoplay muted loop>
+        <source src="/static/images/BG3.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
     <div class="container">
-        <h1 class="mt-5">Face Recognition System</h1>
-        <a href="{{ url_for('login') }}" class="btn btn-primary mt-3">Login</a>
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>Face Recognition System</h1>
+            <p>Effortlessly track attendance with advanced facial recognition technology.</p>
+            <a href="{{ url_for('login') }}" class="btn btn-primary">Get Started</a>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features row text-center mt-5">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <h2>Easy Login</h2>
+                    <p>Log in to access the system and manage attendance effortlessly.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <h2>Real-time Recognition</h2>
+                    <p>Enjoy real-time face detection and attendance tracking.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <h2>Secure Records</h2>
+                    <p>Keep attendance records secure with advanced facial recognition technology.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer mt-5">
+            <p>&copy; 2024 Face Recognition System | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
     </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

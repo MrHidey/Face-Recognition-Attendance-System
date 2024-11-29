@@ -4,14 +4,265 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance</title>
+    <style>
+        /* Same styling as provided, with minor adjustments */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e7f7f2;
+        }
+
+        header {
+            background-color: #00796b;
+            color: white;
+            padding: 2em 0;
+            text-align: center;
+            margin-bottom: 1.5em;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.8em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2em;
+            background-color: white;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        h2 {
+            margin-bottom: 1.5em;
+            font-size: 2em;
+            color: #00796b;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            margin: 0.8em 0;
+            padding: 0.8em;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff; 
+            font-size: 1.1em;
+        }
+
+        .present {
+            background-color: #4CAF50;
+        }
+
+        .absent {
+            background-color: #f44336;
+        }
+
+        li:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .student-info {
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5em 0;
+            background-color: #333;
+            color: white;
+            margin-top: 2em;
+            font-size: 0.9em;
+        }
+
+        a {
+            text-decoration: none;
+            color: #00796b;
+            font-weight: bold;
+            padding: 0.8em 1.5em;
+            border: 2px solid #00796b;
+            border-radius: 5px;
+            background-color: white;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        a:hover {
+            background-color: #00796b;
+            color: white;
+        }
+
+        /* Modal Styling */
+        #attendanceModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            color: #333;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .attendance-list {
+            margin-top: 1em;
+            color: #333;
+        }
+
+        .attendance-list li {
+            font-size: 1.1em;
+            color: #1e88e5;
+            margin-bottom: 0.5em;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 1.1em;
+            margin-top: 1em;
+        }
+
+    </style>
+    <script>
+        function showAttendanceInfo(studentName) {
+            const modal = document.getElementById("attendanceModal");
+            const modalContent = document.querySelector(".modal-content");
+
+            // Clear existing content and show loading
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeModal()">&times;</span>
+                <p>Loading attendance data...</p>
+            `;
+
+            // Fetch previous attendance from the server using studentName
+            fetch(`/attendance/${studentName}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Failed to fetch attendance data.");
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.attendance.length === 0) {
+                        modalContent.innerHTML = `
+                            <span class="close" onclick="closeModal()">&times;</span>
+                            <h3>Attendance for ${studentName}</h3>
+                            <p>No attendance records found.</p>
+                        `;
+                    } else {
+                        let attendanceHtml = `<h3>Attendance for ${studentName}</h3><ul class="attendance-list">`;
+                        data.attendance.forEach(record => {
+                            attendanceHtml += `<li>${record.date}: ${record.status}</li>`;
+                        });
+                        attendanceHtml += "</ul>";
+
+                        modalContent.innerHTML = `
+                            <span class="close" onclick="closeModal()">&times;</span>
+                            ${attendanceHtml}
+                        `;
+                    }
+                })
+                .catch(error => {
+                    modalContent.innerHTML = `
+                        <span class="close" onclick="closeModal()">&times;</span>
+                        <p class="error-message">Error fetching attendance: ${error.message}</p>
+                    `;
+                });
+
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("attendanceModal").style.display = "none";
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById("attendanceModal");
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        };
+    </script>
 </head>
 <body>
-    <h1>Present Students</h1>
-    <ul>
-        {% for student in present_students %}
-            <li>{{ student }}</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ url_for('dashboard') }}">Go Back to Dashboard</a>
+    <header>
+        <h1>Attendance</h1>
+    </header>
+
+    <main>
+        <h2>Present Students</h2>
+        <ul>
+            {% for student in present_students %}
+                <li class="present" onclick="showAttendanceInfo('{{ student }}')">
+                    <span class="student-info">{{ student }}</span>
+                    <span class="status">Present</span>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <h2>Absent Students</h2>
+        <ul>
+            {% for student in absent_students %}
+                <li class="absent" onclick="showAttendanceInfo('{{ student }}')">
+                    <span class="student-info">{{ student }}</span>
+                    <span class="status">Absent</span>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <p><a href="{{ url_for('dashboard') }}">Go Back to Dashboard</a></p>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Attendance System. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Modal for attendance details -->
+    <div id="attendanceModal">
+        <div class="modal-content">
+            <!-- Modal content will be populated dynamically -->
+        </div>
+    </div>
 </body>
 </html>

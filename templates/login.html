@@ -4,22 +4,147 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background-image: url('/static/Images/BG1.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7));
+            z-index: -1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .container h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: #4CAF50;
+            text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 1rem;
+            padding: 0.75rem;
+        }
+
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: #4CAF50;
+            box-shadow: 0px 0px 8px #4CAF50;
+            color: #fff;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #4CAF50, #1E90FF);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .container a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .container a:hover {
+            color: #1E90FF;
+        }
+
+        .show-password {
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .show-password:hover {
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="mt-5">Login</h1>
-        <form method="POST" action="{{ url_for('login') }}">
+        <h2>Login</h2>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-danger">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('login') }}" method="POST">
             <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" class="form-control" id="username" name="username" required>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
             </div>
+
             <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" class="form-control" id="password" name="password" required>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                <div class="mt-2 text-left">
+                    <input type="checkbox" id="showPassword" onclick="togglePasswordVisibility()">
+                    <label for="showPassword" class="show-password">Show Password</label>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Login</button>
+
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
         </form>
+
+        <div class="mt-2">
+            <a href="{{ url_for('register') }}">Register</a>
+        </div>
     </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            var passwordField = document.getElementById("password");
+            passwordField.type = passwordField.type === "password" ? "text" : "password";
+        }
+    </script>
 </body>
 </html>

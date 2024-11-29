@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, Response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify
 from deepface import DeepFace
 import cv2
 import numpy as np
@@ -11,13 +11,13 @@ import queue
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-credentials_file = 'credentials.csv'
 
-# Save username and password to the CSV file
-def save_credentials(username, password):
-    with open(credentials_file, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([username, password])
+credentials_file = 'credentials.csv'
+uploads_folder = 'uploads'
+allowed_extensions = {'png', 'jpg', 'jpeg'}
+
+# Ensure uploads folder exists
+os.makedirs(uploads_folder, exist_ok=True)
 
 # Check if the provided credentials match those in the CSV file
 def check_credentials(username, password):
@@ -28,6 +28,21 @@ def check_credentials(username, password):
                 if row[0] == username and row[1] == password:
                     return True
     return False
+
+# Save new credentials to the CSV file
+def save_credentials(username, password):
+    if not os.path.exists(credentials_file):
+        with open(credentials_file, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Username', 'Password'])  # Write header row only once
+
+    with open(credentials_file, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([username, password])  # Write the username and password
+
+# Check if the file has an allowed extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 # Variables for face recognition
 known_face_encodings = []
@@ -43,25 +58,49 @@ def load_encode():
     global known_face_encodings, known_face_names, students
 
     try:
-        images = ["Danush.jpg", "Keerthi.jpg", "Sam.jpg", "Yash.jpg"]
-        known_face_names = ["Danush", "Keerthi", "Sam", "Yash"]
         known_face_encodings = []
+        known_face_names = []
 
-        for img_name in images:
-            img_path = os.path.join("uploads", img_name)
-            
-            if not os.path.exists(img_path):
-                raise FileNotFoundError(f"Image {img_path} not found.")
-            
-            # Generate embeddings for each image using DeepFace with VGG-Face model
-            embeddings = DeepFace.represent(img_path=img_path, model_name="VGG-Face", enforce_detection=False)
-            if embeddings:
-                for embedding in embeddings:
-                    known_face_encodings.append(np.array(embedding['embedding']))
+        for filename in os.listdir(uploads_folder):
+            if allowed_file(filename):
+                img_path = os.path.join(uploads_folder, filename)
+                name = os.path.splitext(filename)[0]  # Use the filename (without extension) as the name
+                
+                embeddings = DeepFace.represent(img_path=img_path, model_name="VGG-Face", enforce_detection=False)
+                if embeddings:
+                    for embedding in embeddings:
+                        known_face_encodings.append(np.array(embedding['embedding']))
+                    known_face_names.append(name)
 
         students = known_face_names.copy()
     except Exception as e:
         print(f"Error loading images: {e}")
+
+# Route for adding a new student
+@app.route('/add_student', methods=['GET', 'POST'])
+def add_student():
+    if request.method == 'POST':
+        name = request.form['name']
+        file = request.files['photo']
+
+        if not name or not file:
+            flash("Name and photo are required.", "error")
+            return redirect(url_for('add_student'))
+
+        if not allowed_file(file.filename):
+            flash("Invalid file type. Allowed types: png, jpg, jpeg.", "error")
+            return redirect(url_for('add_student'))
+
+        filename = f"{name}.jpg"
+        file_path = os.path.join(uploads_folder, filename)
+        file.save(file_path)
+
+        # Reload encodings
+        load_encode()
+        flash("Student added successfully!", "success")
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_student.html')
 
 
 # Get the current date and return the corresponding file path
@@ -78,7 +117,6 @@ def write_to_csv(file_path, name, time_str):
             lnwriter = csv.writer(f)
             lnwriter.writerow([name, time_str])
             f.flush()  # Ensure data is flushed to disk
-            print(f"Written to CSV: {name}, {time_str}")
     except Exception as e:
         print(f"Error writing to CSV: {e}")
 
@@ -86,17 +124,12 @@ def write_to_csv(file_path, name, time_str):
 def process_frame(frame, file_path):
     global students, present_students
 
-    # Resize the frame for faster processing
-    small_frame = cv2.resize(frame, (0, 0), fx=0.30, fy=0.30)
+    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
     rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
     try:
-        # Use DeepFace to generate embeddings for the frame using VGG-Face model
         embeddings = DeepFace.represent(img_path=rgb_small_frame, model_name="VGG-Face", enforce_detection=False)
         if embeddings:
-            print("Embeddings generated successfully.")
-
-            # Detect faces in the small frame using OpenCV's face detection
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
             faces = face_cascade.detectMultiScale(rgb_small_frame, scaleFactor=1.1, minNeighbors=5)
 
@@ -104,44 +137,31 @@ def process_frame(frame, file_path):
                 name = "Unknown"
                 color = (0, 0, 255)  # Red for unknown
 
-                # Scale back the face coordinates to the original frame size
-                x_orig = int(x / 0.30)
-                y_orig = int(y / 0.30)
-                w_orig = int(w / 0.30)
-                h_orig = int(h / 0.30)
+                x_orig = int(x / 0.25)
+                y_orig = int(y / 0.25)
+                w_orig = int(w / 0.25)
+                h_orig = int(h / 0.25)
 
-                # Draw the red frame around the face
                 cv2.rectangle(frame, (x_orig, y_orig), (x_orig + w_orig, y_orig + h_orig), color, 2)
                 cv2.putText(frame, name, (x_orig, y_orig - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
-                # Check if this embedding matches any known faces
                 for i, known_embedding in enumerate(known_face_encodings):
                     distance = np.linalg.norm(np.array(embedding['embedding']) - np.array(known_embedding))
 
-                    if distance < 1.1:
+                    if distance < 1:
                         name = known_face_names[i]
                         color = (0, 255, 0)  # Change to green if recognized
-                        print(f"Match found: {name}")
-                        print(f"Distance calculated: {distance}")
 
                         if name in students and name not in present_students:
                             present_students.append(name)
                             now = datetime.now()
                             time_str = now.strftime("%H.%M.%S")
-                            print(f"Adding to queue: {name}, {time_str}")
                             file_queue.put((file_path, name, time_str))
-                            print(f"Enqueued: {name}, {time_str}")
 
-                        # Update the rectangle color and text to green for recognized faces
                         cv2.rectangle(frame, (x_orig, y_orig), (x_orig + w_orig, y_orig + h_orig), color, 2)
                         cv2.putText(frame, name, (x_orig, y_orig - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-
-        else:
-            print("No embeddings generated.")
     except Exception as e:
         print(f"Error in face recognition: {e}")
-
-
 
 # Stream video frames continuously while recognizing faces asynchronously
 def generate_frames():
@@ -153,7 +173,7 @@ def generate_frames():
             print("Failed to capture frame")
             break
 
-        file_path = get_current_date()  # Get file path each time
+        file_path = get_current_date()
         process_frame(frame, file_path)
 
         _, buffer = cv2.imencode('.jpg', frame)
@@ -169,10 +189,8 @@ def file_writer():
         if item is None:
             break  # Stop the loop if None is received
 
-        file_path, name, time_str = item  # Unpack the tuple
-        print(f"Writing to CSV from queue: {name}, {time_str}")  # Debugging log
+        file_path, name, time_str = item
         write_to_csv(file_path, name, time_str)
-        print("Write complete.")
 
 @app.route('/video_feed')
 def video_feed():
@@ -192,10 +210,31 @@ def login():
             session['user'] = username
             return redirect(url_for('dashboard'))
         else:
-            save_credentials(username, password)
-            session['user'] = username
-            return redirect(url_for('dashboard'))
+            flash("Invalid username or password.", "error")
+            return redirect(url_for('login'))
+
     return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        if password != confirm_password:
+            flash("Passwords do not match!", "error")
+            return redirect(url_for('register'))
+
+        if check_credentials(username, password):
+            flash("Username already exists!", "error")
+            return redirect(url_for('register'))
+
+        save_credentials(username, password)
+        flash("Registration successful! You can now log in.", "success")
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -207,7 +246,8 @@ def dashboard():
 
 @app.route('/start_recognition')
 def start_recognition():
-    global recognizing, video_capture, present_students
+    global recognizing, video_capture, present_students, students
+
     recognizing = True
     video_capture = cv2.VideoCapture(0)
     present_students.clear()
@@ -216,23 +256,45 @@ def start_recognition():
         recognizing = False
         return "Could not open video device", 500
 
-    # Start the file_writer thread to handle CSV writing asynchronously
     threading.Thread(target=file_writer, daemon=True).start()
+
+    # Clear previous absent list and calculate it dynamically when recognition stops
+    absent_students = list(set(students) - set(present_students))
 
     return redirect(url_for('dashboard'))
 
+
 @app.route('/stop_recognition')
 def stop_recognition():
-    global recognizing, video_capture, present_students
+    global recognizing, video_capture, present_students, students
+
     recognizing = False
     if video_capture is not None:
         video_capture.release()
         video_capture = None
-    
-    # Ensure we stop the file writer by putting None in the queue
+
+    # Calculate absent students dynamically
+    absent_students = list(set(students) - set(present_students))
     file_queue.put(None)
 
-    return render_template('attendance.html', present_students=present_students)
+    return render_template('attendance.html', present_students=present_students, absent_students=absent_students)
+
+
+@app.route('/attendance/<student_name>')
+def attendance(student_name):
+    file_path = get_current_date()
+    attendance_data = []
+    if os.path.exists(file_path):
+        with open(file_path, mode='r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == student_name:
+                    attendance_data.append({'date': row[1], 'status': 'Present'})
+    if attendance_data:
+        return jsonify({'attendance': attendance_data})
+    else:
+        return jsonify({'attendance': [], 'message': 'No attendance found'}), 404
+
 
 @app.route('/logout')
 def logout():
