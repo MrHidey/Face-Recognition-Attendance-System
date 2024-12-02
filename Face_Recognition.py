@@ -110,13 +110,22 @@ def get_current_date():
     file_path = f"{current_date}.csv"
     return file_path
 
-# Write attendance data (name, time) to the CSV file
+# Write attendance data (name, date, time) to a central CSV file
 def write_to_csv(file_path, name, time_str):
+    central_file_path = 'central_attendance.csv'  # The central attendance file
+    
     try:
-        with open(file_path, 'a', newline='') as f:
+        # Check if the file exists; if not, add a header row
+        file_exists = os.path.exists(central_file_path)
+        
+        with open(central_file_path, 'a', newline='') as f:
             lnwriter = csv.writer(f)
-            lnwriter.writerow([name, time_str])
-            f.flush()  # Ensure data is flushed to disk
+            if not file_exists:
+                lnwriter.writerow(['Student Name', 'Date', 'Time'])  # Header
+            
+            # Append attendance record
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            lnwriter.writerow([name, date_str, time_str])
     except Exception as e:
         print(f"Error writing to CSV: {e}")
 
@@ -148,15 +157,16 @@ def process_frame(frame, file_path):
                 for i, known_embedding in enumerate(known_face_encodings):
                     distance = np.linalg.norm(np.array(embedding['embedding']) - np.array(known_embedding))
 
-                    if distance < 1:
+                    if distance < 1.08:
                         name = known_face_names[i]
                         color = (0, 255, 0)  # Change to green if recognized
 
                         if name in students and name not in present_students:
                             present_students.append(name)
                             now = datetime.now()
-                            time_str = now.strftime("%H.%M.%S")
+                            time_str = now.strftime("%H:%M:%S")
                             file_queue.put((file_path, name, time_str))
+
 
                         cv2.rectangle(frame, (x_orig, y_orig), (x_orig + w_orig, y_orig + h_orig), color, 2)
                         cv2.putText(frame, name, (x_orig, y_orig - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
@@ -275,25 +285,53 @@ def stop_recognition():
 
     # Calculate absent students dynamically
     absent_students = list(set(students) - set(present_students))
+
+    # Write attendance for each present student
+    now = datetime.now()
+    time_str = now.strftime("%H:%M:%S")
+    for student in present_students:
+        file_path = get_current_date()  # Get the current date for the daily file (optional)
+        write_to_csv(file_path, student, time_str)  # Write to the central CSV
+
     file_queue.put(None)
 
     return render_template('attendance.html', present_students=present_students, absent_students=absent_students)
 
 
-@app.route('/attendance/<student_name>')
-def attendance(student_name):
-    file_path = get_current_date()
-    attendance_data = []
-    if os.path.exists(file_path):
-        with open(file_path, mode='r') as file:
-            reader = csv.reader(file)
+@app.route('/attendance/<studentName>/<date>')
+def attendance(studentName, date):
+    central_file_path = 'central_attendance.csv'
+    attendance_data = {}
+
+    if os.path.exists(central_file_path):
+        with open(central_file_path, mode='r') as file:
+            reader = csv.DictReader(file)
             for row in reader:
-                if row[0] == student_name:
-                    attendance_data.append({'date': row[1], 'status': 'Present'})
-    if attendance_data:
-        return jsonify({'attendance': attendance_data})
+                name = row['Student Name']
+                if name == studentName and row['Date'] == date:
+                    if name not in attendance_data:
+                        attendance_data[name] = []
+                    attendance_data[name].append({'date': row['Date'], 'time': row['Time']})
+
+        if studentName in attendance_data and len(attendance_data[studentName]) > 0:
+            return jsonify({'attendance': attendance_data[studentName]})
+        else:
+            return jsonify({'attendance': [], 'message': f'No attendance found for {studentName} on {date}'}), 404
     else:
-        return jsonify({'attendance': [], 'message': 'No attendance found'}), 404
+        return jsonify({'attendance': [], 'message': 'No attendance data found'}), 404
+
+
+from flask import send_file
+
+@app.route('/download_attendance')
+def download_attendance():
+    file_path = 'central_attendance.csv'
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True, download_name='attendance.csv')
+    else:
+        flash("Attendance file not found!", "error")
+        return redirect(url_for('dashboard'))
+
 
 
 @app.route('/logout')

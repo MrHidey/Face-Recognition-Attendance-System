@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance</title>
+    <title>Attendance System</title>
     <style>
-        /* Same styling as provided, with minor adjustments */
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -60,7 +59,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #fff; 
+            color: #fff;
             font-size: 1.1em;
         }
 
@@ -107,6 +106,28 @@
             color: white;
         }
 
+        /* Download Button Styling */
+        .download-btn {
+            background: linear-gradient(to right, #00796b, #48c774);
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            padding: 0.6em 1.5em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+            display: inline-block;
+            margin: 1.5em 0;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to right, #48c774, #00796b);
+        }
+
         /* Modal Styling */
         #attendanceModal {
             display: none;
@@ -116,16 +137,16 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
             overflow: auto;
             padding-top: 60px;
         }
 
         .modal-content {
             background-color: #fff;
-            color: #333;
+            color: #333; /* Updated text color for better readability */
             margin: 5% auto;
-            padding: 20px;
+            padding: 30px;
             border: 1px solid #888;
             width: 80%;
             max-width: 600px;
@@ -149,12 +170,12 @@
 
         .attendance-list {
             margin-top: 1em;
-            color: #333;
+            font-size: 1.1em;
         }
 
         .attendance-list li {
             font-size: 1.1em;
-            color: #1e88e5;
+            color: #00796b; /* Updated list item text color */
             margin-bottom: 0.5em;
         }
 
@@ -164,59 +185,53 @@
             margin-top: 1em;
         }
 
+        @media (max-width: 768px) {
+            main {
+                padding: 1.5em;
+            }
+
+            .download-btn {
+                width: 100%;
+                padding: 0.8em;
+            }
+        }
     </style>
     <script>
         function showAttendanceInfo(studentName) {
             const modal = document.getElementById("attendanceModal");
             const modalContent = document.querySelector(".modal-content");
+            modalContent.innerHTML = `<span class="close" onclick="closeModal()">&times;</span><p>Loading...</p>`;
+            modal.style.display = "block";
 
-            // Clear existing content and show loading
-            modalContent.innerHTML = `
-                <span class="close" onclick="closeModal()">&times;</span>
-                <p>Loading attendance data...</p>
-            `;
-
-            // Fetch previous attendance from the server using studentName
-            fetch(`/attendance/${studentName}`)
+            const currentDate = new Date().toISOString().split('T')[0];
+            fetch(`/attendance/${studentName}/${currentDate}`)
                 .then(response => {
                     if (!response.ok) throw new Error("Failed to fetch attendance data.");
                     return response.json();
                 })
                 .then(data => {
+                    modalContent.innerHTML = `<span class="close" onclick="closeModal()">&times;</span>`;
                     if (data.attendance.length === 0) {
-                        modalContent.innerHTML = `
-                            <span class="close" onclick="closeModal()">&times;</span>
-                            <h3>Attendance for ${studentName}</h3>
-                            <p>No attendance records found.</p>
-                        `;
+                        modalContent.innerHTML += `<p>No attendance records found for ${studentName} on ${currentDate}.</p>`;
                     } else {
-                        let attendanceHtml = `<h3>Attendance for ${studentName}</h3><ul class="attendance-list">`;
+                        let attendanceHtml = `<ul class="attendance-list">`;
                         data.attendance.forEach(record => {
-                            attendanceHtml += `<li>${record.date}: ${record.status}</li>`;
+                            attendanceHtml += `<li>${record.date}: ${record.time}</li>`;
                         });
                         attendanceHtml += "</ul>";
-
-                        modalContent.innerHTML = `
-                            <span class="close" onclick="closeModal()">&times;</span>
-                            ${attendanceHtml}
-                        `;
+                        modalContent.innerHTML += attendanceHtml;
                     }
                 })
                 .catch(error => {
-                    modalContent.innerHTML = `
-                        <span class="close" onclick="closeModal()">&times;</span>
-                        <p class="error-message">Error fetching attendance: ${error.message}</p>
-                    `;
+                    modalContent.innerHTML += `<p class="error-message">Error: ${error.message}</p>`;
                 });
-
-            modal.style.display = "block";
         }
 
         function closeModal() {
-            document.getElementById("attendanceModal").style.display = "none";
+            const modal = document.getElementById("attendanceModal");
+            modal.style.display = "none";
         }
 
-        // Close modal when clicking outside of it
         window.onclick = function(event) {
             const modal = document.getElementById("attendanceModal");
             if (event.target === modal) {
@@ -236,7 +251,6 @@
             {% for student in present_students %}
                 <li class="present" onclick="showAttendanceInfo('{{ student }}')">
                     <span class="student-info">{{ student }}</span>
-                    <span class="status">Present</span>
                 </li>
             {% endfor %}
         </ul>
@@ -246,23 +260,20 @@
             {% for student in absent_students %}
                 <li class="absent" onclick="showAttendanceInfo('{{ student }}')">
                     <span class="student-info">{{ student }}</span>
-                    <span class="status">Absent</span>
                 </li>
             {% endfor %}
         </ul>
 
         <p><a href="{{ url_for('dashboard') }}">Go Back to Dashboard</a></p>
+        <button class="btn download-btn" onclick="window.location.href='/download_attendance'">Download Attendance</button>
     </main>
 
     <footer>
         <p>&copy; 2024 Attendance System. All Rights Reserved.</p>
     </footer>
 
-    <!-- Modal for attendance details -->
     <div id="attendanceModal">
-        <div class="modal-content">
-            <!-- Modal content will be populated dynamically -->
-        </div>
+        <div class="modal-content"></div>
     </div>
 </body>
 </html>
